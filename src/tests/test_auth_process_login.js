@@ -1,5 +1,5 @@
 var assert = require('nodetk/testing/custom_assert')
-  , client = require('../client')
+  , client = require('../oauth2_client')
   , get_expected_res = require('./tools').get_expected_res
   , get_expected_redirect_res = require('./tools').get_expected_redirect_res
   ;

@@ -168,7 +168,7 @@ var logout = function(req, res) {
 var login = function(req, res) {
   /* Triggers redirects_for_login with next param if present in url query.
    */
-  CLIENT.redirects_for_login(res, nexturl_query(req));
+  CLIENT.redirects_for_login(res, CLIENT.nexturl_query(req));
 }
 
 exports.connector = function(conf, options) {

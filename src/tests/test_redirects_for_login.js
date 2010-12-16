@@ -1,7 +1,7 @@
 var assert = require('nodetk/testing/custom_assert')
+  , tools = require('nodetk/testing/tools')
   , querystring = require('querystring')
   , client = require('../oauth2_client')
-  , get_expected_redirect_res = require('./tools').get_expected_redirect_res
   ;
 
 
@@ -23,7 +23,7 @@ exports.tests = [
   , redirect_uri: 'http://site/process'
   , response_type: 'code'
   });
-  var res = get_expected_redirect_res("http://oauth2server/auth?" + qs);
+  var res = tools.get_expected_redirect_res("http://oauth2server/auth?" + qs);
   client.redirects_for_login(res);
 }],
 
@@ -35,7 +35,7 @@ exports.tests = [
   , response_type: 'code'
   , state: JSON.stringify({next: next})
   });
-  var res = get_expected_redirect_res("http://oauth2server/auth?" + qs);
+  var res = tools.get_expected_redirect_res("http://oauth2server/auth?" + qs);
   client.redirects_for_login(res, next);
 }],
 

@@ -6,11 +6,6 @@
  *    before), that redirects the user to the OAuth2 server for authentication.
  *
  */
-[ 'nodetk/src'
-].forEach(function(libpath) {
-  require.paths.unshift(__dirname + '/' + libpath);
-});
-
 var URL = require('url')
   , querystring = require('querystring')
 

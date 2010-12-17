@@ -1,0 +1,23 @@
+
+To run this example:
+
+- Set-up auth_server running with basic config and test data:
+
+  In auth_server:
+    node src/scripts/load_data.js # This will display a client_id value
+    node src/server.js
+
+
+- Set-up the client in example:
+
+  Set the client_id value prviously displayed in server.js (search for 'TODO').
+
+  Then run it:
+    node src/server.js
+
+
+- Go to http://127.0.0.1:7070/ and try to log in
+  Credentials: pruyssen@af83.com / 1234
+
+To clear the sessions : just remove the cookies.
+

@@ -19,7 +19,39 @@ oauth2_client_node is developed together with:
 
 ## Usage
 
-TBD
+There are two examples of usage in the examples directory, one using Facebook as OAuth2 server, and one using auth_server as OAuth2 server.
+
+To create an OAuth2 client, you will need to to create an oauth2_client_node middleware using oauth2_client.connector. This method returns a connect middleware and takes as arguments:
+
+ - config: hash containing:
+   - base_url: The base URL of the OAuth2 client. 
+     Ex: http://domain.com:8080
+   - process_login_url: the URL where to the OAuth2 server must redirect
+     the user when authenticated.
+   - login_url: the URL where the user must go to be redirected
+     to OAuth2 server for authentication.
+   - logout_url: the URL where the user must go so that his session is
+     cleared, and he is unlogged from client.
+   - server_token_endpoint: full URL, OAuth2 server token endpoint.
+   - default_redirection_url: default URL to redirect to after login / logout.
+     Optional, default to '/'.
+ 
+ - options: optional, hash containing:
+   - valid_grant: a function which will replace the default one
+     to check the grant is ok. You might want to use this shortcut if you
+     have a faster way of checking than requesting the OAuth2 server
+     with an HTTP request.
+   - treat_access_token: a function which will replace the
+     default one to do something with the access token. You will tipically
+     use that function to set some info in session.
+   - transform_token_response: a function which will replace
+     the default one to obtain a hash containing the access_token from
+     the OAuth2 server reply. This method should be provided if the
+     OAuth2 server we are requesting does not return JSON encoded data but
+     something else.
+
+Once set and plug, the oauth2_client middleware will catch and answer requests
+aimed at the oauth2 client (login, logout and process_login endpoints).
 
 
 ## Dependencies

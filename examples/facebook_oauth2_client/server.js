@@ -4,6 +4,7 @@
 require.paths.unshift(__dirname + '/../dependencies/connect/lib');
 require.paths.unshift(__dirname + '/../dependencies/cookie-sessions/lib');
 require.paths.unshift(__dirname + '/../../vendors/nodetk/src');
+require.paths.unshift(__dirname + '/../../vendors/node-base64');
 require.paths.unshift(__dirname + '/../../src');
 
 
@@ -18,19 +19,25 @@ var querystring = require('querystring')
 var base_url = 'http://127.0.0.1:7070';
 var config = {
   oauth2_client: {
-    base_url: base_url,
-    process_login_url: '/login/process/',
-    redirect_uri: base_url + '/login/process/',
-    login_url: '/login',
-    logout_url: '/logout',
-    default_redirection_url: '/',
-
-    server_authorize_endpoint: "https://graph.facebook.com/oauth/authorize",
-    server_token_endpoint: 'https://graph.facebook.com/oauth/access_token',
-    // These are the client id and secret of a FB application only registered
-    // for testing purpose... don't use it in prod!
-    client_id: "c5c0789871d6a65e485bc78235639d36",
-    client_secret: 'ccd74db270c0b5f1dad0a603d36d6f1b',
+    client: {
+      base_url: base_url,
+      process_login_url: '/login/process/',
+      redirect_uri: base_url + '/login/process/',
+      login_url: '/login',
+      logout_url: '/logout',
+      default_redirection_url: '/'
+    },
+    default_server: 'facebook.com',
+    servers: {
+      'facebook.com': {
+      server_authorize_endpoint: "https://graph.facebook.com/oauth/authorize",
+      server_token_endpoint: 'https://graph.facebook.com/oauth/access_token',
+      // These are the client id and secret of a FB application only registered
+      // for testing purpose... don't use it in prod!
+      client_id: "c5c0789871d6a65e485bc78235639d36",
+      client_secret: 'ccd74db270c0b5f1dad0a603d36d6f1b',
+      }
+    }
   }
 };
 

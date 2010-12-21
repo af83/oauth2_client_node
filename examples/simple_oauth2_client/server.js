@@ -4,6 +4,7 @@
 require.paths.unshift(__dirname + '/../dependencies/connect/lib/');
 require.paths.unshift(__dirname + '/../dependencies/cookie-sessions/lib/');
 require.paths.unshift(__dirname + '/../../vendors/nodetk/src/');
+require.paths.unshift(__dirname + '/../../vendors/node-base64/');
 require.paths.unshift(__dirname + '/../../src/');
 
 
@@ -17,19 +18,25 @@ var app = require('./app')
 var base_url = 'http://127.0.0.1:7070';
 var config = {
   oauth2_client: {
-    base_url: base_url,
-    process_login_url: '/login/process',
-    redirect_uri: base_url + '/login/process',
-    login_url: '/login',
-    logout_url: '/logout',
-    default_redirection_url: '/',
+    client: {
+      base_url: base_url,
+      process_login_url: '/login/process',
+      redirect_uri: base_url + '/login/process',
+      login_url: '/login',
+      logout_url: '/logout',
+      default_redirection_url: '/',
+    },
+    default_server: "auth_server",
+    servers: {
+      "auth_server": {
+      server_authorize_endpoint: 'http://localhost:8080/oauth2/authorize',
+      server_token_endpoint: 'http://localhost:8080/oauth2/token',
 
-    server_authorize_endpoint: 'http://localhost:8080/oauth2/authorize',
-    server_token_endpoint: 'http://localhost:8080/oauth2/token',
-
-    client_id: null, // TODO: define this before running
-    client_secret: 'some secret string',
-    name: 'Test client'
+      client_id: null, // TODO: define this before running
+      client_secret: 'some secret string',
+      name: 'Test client'
+      }
+    }
   }
 };
 
@@ -58,7 +65,7 @@ var serve = function(port, callback) {
 };
 
 if(process.argv[1] == __filename) {
-  if(!config.oauth2_client.client_id) {
+  if(!config.oauth2_client.servers['auth_server'].client_id) {
     console.log('You must set a oauth2 client id in config (cf. README).');
     process.exit(1);
   }

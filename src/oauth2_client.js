@@ -6,21 +6,37 @@
  *    before), that redirects the user to the OAuth2 server for authentication.
  *
  */
+require.paths.unshift(__dirname + '/../vendors/node-base64');
+
 var URL = require('url')
   , querystring = require('querystring')
 
+  , base64 = require('base64')
   , web = require('nodetk/web')
   , tools = require('nodetk/server_tools')
   ;
 
-// OAuth2 client config.
-var config;
-// for testing purpose:
-exports._set_config = function(conf) {
-  config = conf;
+var CLIENT = exports;
+
+CLIENT.dumps = function(obj) {
+  /* Crypt the JSON object to opaque string
+   */
+  // TODO: crypt the string
+  return base64.encode(JSON.stringify(obj));
 };
 
-var CLIENT = exports;
+CLIENT.loads = function(str) {
+  /* Uncrypt the string and return JSON obj or null.
+   */
+  if(!str) return null;
+  try {
+    return JSON.parse(base64.decode(str));
+  } catch(err) {
+    return null;
+  }
+};
+
+
 CLIENT.transform_token_response = function(body) {
   /* Given body answer to the HTTP request to obtain the access_token, 
    * returns a JSON hash containing:
@@ -34,11 +50,12 @@ CLIENT.transform_token_response = function(body) {
   return JSON.parse(body)
 };
 
-CLIENT.valid_grant = function(code, callback, fallback) {
+CLIENT.valid_grant = function(oauth2_server_id, code, callback, fallback) {
   /* Valid the grant given by user requesting the OAuth2 server 
    * at OAuth2 token endpoint.
    *
    * Arguments:
+   *    - oauth2_server_id: the OAuth2 server (ex: "facebook.com").
    *    - code: the authorization code given by OAuth2 server to user.
    *    - callback: function to be called once grant is validated/rejected.
    *      Called with the access_token returned by OAuth2 server as first
@@ -47,12 +64,14 @@ CLIENT.valid_grant = function(code, callback, fallback) {
    *    - fallback: function to be called in case of error, with err argument.
    *
    */
-  web.POST(config.server_token_endpoint, {
+  var cconfig = CLIENT.config.client;
+  var sconfig = CLIENT.config.servers[oauth2_server_id];
+  web.POST(sconfig.server_token_endpoint, {
     grant_type: "authorization_code",
-    client_id: config.client_id,
+    client_id: sconfig.client_id,
     code: code,
-    client_secret: config.client_secret,
-    redirect_uri: config.redirect_uri
+    client_secret: sconfig.client_secret,
+    redirect_uri: cconfig.redirect_uri
   }, function(statusCode, headers, body) {
     if(statusCode == 200) {
       try {
@@ -99,47 +118,57 @@ CLIENT.auth_process_login = function(req, res) {
    */
   var params = URL.parse(req.url, true).query || {}
     , code = params.code
+    , state = params.state
     ;
 
   if(!code) {
     res.writeHead(400, {'Content-Type': 'text/plain'});
-    res.end('The "code" parameter is missing.');
-    return;
+    return res.end('The "code" parameter is missing.');
   }
-  CLIENT.valid_grant(code, function(token) {
+  if(!state) {
+    res.writeHead(400, {'Content-Type': 'text/plain'});
+    return res.end('The "state" parameter is missing.');
+  }
+  state = CLIENT.loads(state);
+  if(!state) {
+    res.writeHead(400, {'Content-Type': 'text/plain'});
+    return res.end('The "state" parameter is invalid.');
+  }
+  var oauth2_server_id = state[0];
+  var next_url = state[1];
+  state = state[2]; // TODO: do something with it!
+  CLIENT.valid_grant(oauth2_server_id, code, function(token) {
     if(!token) {
       res.writeHead(400, {'Content-Type': 'text/plain'});
       res.end('Invalid grant.');
       return;
     }
     CLIENT.treat_access_token(token.access_token, req, res, function() {
-      var next;
-      if(params.state) try {
-        next = JSON.parse(params.state).next;
-      } catch (e) {
-        return tools.server_error(res, e);
-      }
-      if(!next) next = config.base_url + config.default_redirection_url;
-      tools.redirect(res, next);
+      tools.redirect(res, next_url);
     }, function(err){tools.server_error(res, err)});
   }, function(err){tools.server_error(res, err)});
 };
 
 
-CLIENT.redirects_for_login = function(res, next_url) {
+CLIENT.redirects_for_login = function(oauth2_server_id, res, next_url, state) {
   /* Redirects the user to OAuth2 server for authentication.
    *
    * Arguments:
+   *  - oauth2_server_id: OAuth2 server identification (ex: "facebook.com").
    *  - res
    *  - next_url: an url to redirect to once the process is complete.
+   *  - state: optional, a hash containing info you want to retrieve at the end
+   *    of the process.
    */
+  var sconfig = CLIENT.config.servers[oauth2_server_id];
+  var cconfig = CLIENT.config.client;
   var data = {
-    client_id: config.client_id,
-    redirect_uri: config.redirect_uri,
-    response_type: 'code'
+    client_id: sconfig.client_id,
+    redirect_uri: cconfig.redirect_uri,
+    response_type: 'code',
+    state: CLIENT.dumps([oauth2_server_id, next_url, state || null])
   };
-  if(next_url) data.state = JSON.stringify({next: next_url});
-  var url = config.server_authorize_endpoint +'?'+ querystring.stringify(data);
+  var url = sconfig.server_authorize_endpoint +'?'+ querystring.stringify(data);
   tools.redirect(res, url);
 };
 
@@ -147,9 +176,10 @@ CLIENT.nexturl_query = function(req) {
   /* Returns value of next url query parameter if present, default otherwise.
    * The next query parameter should not contain the domain, the result will.
    */
+  var cconfig = CLIENT.config.client;
   var params = URL.parse(req.url, true).query || {};
-  var next = params.next || config.default_redirection_url;
-  var url = config.base_url + next;
+  var next = params.next || cconfig.default_redirection_url;
+  var url = cconfig.base_url + next;
   return url;
 };
 
@@ -163,8 +193,9 @@ var logout = function(req, res) {
 var login = function(req, res) {
   /* Triggers redirects_for_login with next param if present in url query.
    */
-  CLIENT.redirects_for_login(res, CLIENT.nexturl_query(req));
-}
+  var oauth2_server_id = CLIENT.config.default_server;
+  CLIENT.redirects_for_login(oauth2_server_id, res, CLIENT.nexturl_query(req));
+};
 
 exports.connector = function(conf, options) {
   /* Returns OAuth2 client connect middleware.
@@ -174,17 +205,29 @@ exports.connector = function(conf, options) {
    *
    * Arguments:
    *  - config: hash containing:
-   *    - base_url: The base URL of the OAuth2 client. 
-   *      Ex: http://domain.com:8080
-   *    - process_login_url: the URL where to the OAuth2 server must redirect
-   *      the user when authenticated.
-   *    - login_url: the URL where the user must go to be redirected
-   *      to OAuth2 server for authentication.
-   *    - logout_url: the URL where the user must go so that his session is
-   *      cleared, and he is unlogged from client.
-   *    - server_token_endpoint: full URL, OAuth2 server token endpoint.
-   *    - default_redirection_url: default URL to redirect to after login / logout.
-   *      Optional, default to '/'.
+   *
+   *    - client, hash containing:
+   *      - base_url: The base URL of the OAuth2 client. 
+   *        Ex: http://domain.com:8080
+   *      - process_login_url: the URL where to the OAuth2 server must redirect
+   *        the user when authenticated.
+   *      - login_url: the URL where the user must go to be redirected
+   *        to OAuth2 server for authentication.
+   *      - logout_url: the URL where the user must go so that his session is
+   *        cleared, and he is unlogged from client.
+   *      - default_redirection_url: default URL to redirect to after login / logout.
+   *        Optional, default to '/'.
+   *
+   *    - default_server: which server to use for default login when user
+   *      access login_url (ex: 'facebook.com').
+   *    - servers: hash associating an OAuth2 server ids (ex: "facebook.com") 
+   *      with a hash containing (for each):
+   *      - server_authorize_endpoint: full URL, OAuth2 server token endpoint
+   *        (ex: "https://graph.facebook.com/oauth/authorize").
+   *      - server_token_endpoint: full url, where to check the token
+   *        (ex: "https://graph.facebook.com/oauth/access_token").
+   *      - client_id: the client id as registered by this OAuth2 server.
+   *      - client_secret: shared secret between client and this OAuth2 server.
    *
    *  - options: optional, hash containing:
    *    - valid_grant: a function which will replace the default one
@@ -201,7 +244,8 @@ exports.connector = function(conf, options) {
    *
    */
   conf.default_redirection_url = conf.default_redirection_url || '/';
-  config = conf;
+  CLIENT.config = conf;
+  var cconf = CLIENT.config.client;
   options = options || {};
   [ 'valid_grant'
   , 'treat_access_token'
@@ -211,9 +255,9 @@ exports.connector = function(conf, options) {
   });
 
   var routes = {GET: {}};
-  routes.GET[conf.process_login_url] = CLIENT.auth_process_login;
-  routes.GET[conf.login_url] = login;
-  routes.GET[conf.logout_url] = logout;
+  routes.GET[cconf.process_login_url] = CLIENT.auth_process_login;
+  routes.GET[cconf.login_url] = login;
+  routes.GET[cconf.logout_url] = logout;
   return tools.get_connector_from_str_routes(routes);
 };
 

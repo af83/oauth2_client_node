@@ -6,37 +6,46 @@ var assert = require('nodetk/testing/custom_assert')
 
 
 exports.module_init = function(callback) {
-  client._set_config({
-    server_authorize_endpoint: 'http://oauth2server/auth'
-  , client_id: 'CLIENTID'
-  , redirect_uri: 'http://site/process'
-  });
+  client.config = {
+    client: {
+      redirect_uri: 'http://site/process'
+    }
+  , default_server: "test"
+  , servers: {
+      "test": {
+        server_authorize_endpoint: 'http://oauth2server/auth'
+      , client_id: 'CLIENTID'
+      }
+    }
+  };
   callback();
 };
 
 
 exports.tests = [
 
-['no next_url', 2, function() {
+['no given state', 2, function() {
+  var state = client.dumps(['test', 'http://next_url', null]);
   var qs = querystring.stringify({
     client_id: 'CLIENTID'
   , redirect_uri: 'http://site/process'
   , response_type: 'code'
+  , state: state
   });
   var res = tools.get_expected_redirect_res("http://oauth2server/auth?" + qs);
-  client.redirects_for_login(res);
+  client.redirects_for_login('test', res, 'http://next_url');
 }],
 
-['next_url', 2, function() {
-  var next = 'http://site/next_url';
+['given state', 2, function() {
+  var state = client.dumps(['test', 'http://next_url', {"key": "val"}]);
   var qs = querystring.stringify({
     client_id: 'CLIENTID'
   , redirect_uri: 'http://site/process'
   , response_type: 'code'
-  , state: JSON.stringify({next: next})
+  , state: state
   });
   var res = tools.get_expected_redirect_res("http://oauth2server/auth?" + qs);
-  client.redirects_for_login(res, next);
+  client.redirects_for_login('test', res, 'http://next_url', {'key': 'val'});
 }],
 
 ];

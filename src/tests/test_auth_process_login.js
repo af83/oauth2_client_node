@@ -26,53 +26,49 @@ exports.tests = [
   client.auth_process_login(req, res);
 }],
 
-['Invalid grant (no error)', 3, function() {
-  client.valid_grant = function(_, callback){callback(null)};
+['Missing state', 3, function() {
   var req = {url: '/?code=somecode'};
   var res = tools.get_expected_res(400);
   client.auth_process_login(req, res);
 }],
 
+['Invalid state', 3, function() {
+  var req = {url: '/?code=somecode&state=toto'};
+  var res = tools.get_expected_res(400);
+  client.auth_process_login(req, res);
+}],
+
+['Invalid grant (no error)', 3, function() {
+  client.valid_grant = function(_, _, callback){callback(null)};
+  state = client.dumps({});
+  var req = {url: '/?code=somecode&state='+state};
+  var res = tools.get_expected_res(400);
+  client.auth_process_login(req, res);
+}],
+
 ['Invalid grant (error)', 3, function() {
-  client.valid_grant = function(_, _, fallback){fallback('error')};
-  var req = {url: '/?code=somecode'};
+  client.valid_grant = function(_, _, _, fallback){fallback('error')};
+  var state = client.dumps({});
+  var req = {url: '/?code=somecode&state='+state};
   var res = tools.get_expected_res(500);
   client.auth_process_login(req, res);
 }],
 
 ['Valid grant, treat_access_token fallback', 3, function() {
-  client.valid_grant = function(_, callback){callback('token')};
+  client.valid_grant = function(_, _, callback){callback('token')};
   client.treat_access_token = function(_, _, _, _, fallback) {fallback('err')};
-  var req = {url: '/?code=somecode'};
+  var state = client.dumps({});
+  var req = {url: '/?code=somecode&state='+state};
   var res = tools.get_expected_res(500);
   client.auth_process_login(req, res);
 }],
 
-['Valid grant, invalid params.state', 3, function() {
-  client.valid_grant = function(_, callback){callback('token')};
+['Valid grant', 2, function() {
+  client.valid_grant = function(_, _, callback){callback('token')};
   client.treat_access_token = function(_, _, _, callback) {callback()};
-  var req = {url: '/?code=somecode&state=titi'};
-  var res = tools.get_expected_res(500);
-  client.auth_process_login(req, res);
-}],
-
-['Valid grant, next in params.state', 2, function() {
-  client.valid_grant = function(_, callback){callback('token')};
-  client.treat_access_token = function(_, _, _, callback) {callback()};
-  var req = {url: '/?code=somecode&state={"next":"next_val"}'};
-  var res = tools.get_expected_redirect_res("next_val");
-  client.auth_process_login(req, res);
-}],
-
-['Valid grant, no next in params.state', 2, function() {
-  client._set_config({
-    base_url: 'http://site.com'
-  , default_redirection_url: '/'
-  });
-  client.valid_grant = function(_, callback){callback('token')};
-  client.treat_access_token = function(_, _, _, callback) {callback()};
-  var req = {url: '/?code=somecode&state={}'};
-  var res = tools.get_expected_redirect_res("http://site.com/");
+  var state = client.dumps(['serverid', 'next_url', null]);
+  var req = {url: '/?code=somecode&state='+state};
+  var res = tools.get_expected_redirect_res("next_url");
   client.auth_process_login(req, res);
 }],
 

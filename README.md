@@ -23,32 +23,44 @@ There are two examples of usage in the examples directory, one using Facebook as
 
 To create an OAuth2 client, you will need to to create an oauth2_client_node middleware using oauth2_client.connector. This method returns a connect middleware and takes as arguments:
 
- - config: hash containing:
-   - base_url: The base URL of the OAuth2 client. 
-     Ex: http://domain.com:8080
-   - process_login_url: the URL where to the OAuth2 server must redirect
-     the user when authenticated.
-   - login_url: the URL where the user must go to be redirected
-     to OAuth2 server for authentication.
-   - logout_url: the URL where the user must go so that his session is
-     cleared, and he is unlogged from client.
-   - server_token_endpoint: full URL, OAuth2 server token endpoint.
-   - default_redirection_url: default URL to redirect to after login / logout.
-     Optional, default to '/'.
- 
- - options: optional, hash containing:
-   - valid_grant: a function which will replace the default one
-     to check the grant is ok. You might want to use this shortcut if you
-     have a faster way of checking than requesting the OAuth2 server
-     with an HTTP request.
-   - treat_access_token: a function which will replace the
-     default one to do something with the access token. You will tipically
-     use that function to set some info in session.
-   - transform_token_response: a function which will replace
-     the default one to obtain a hash containing the access_token from
-     the OAuth2 server reply. This method should be provided if the
-     OAuth2 server we are requesting does not return JSON encoded data but
-     something else.
+  - config: hash containing:
+  
+    - client, hash containing:
+      - base_url: The base URL of the OAuth2 client. 
+        Ex: http://domain.com:8080
+      - process_login_url: the URL where to the OAuth2 server must redirect
+        the user when authenticated.
+      - login_url: the URL where the user must go to be redirected
+        to OAuth2 server for authentication.
+      - logout_url: the URL where the user must go so that his session is
+        cleared, and he is unlogged from client.
+      - default_redirection_url: default URL to redirect to after login / logout.
+        Optional, default to '/'.
+  
+    - default_server: which server to use for default login when user
+      access login_url (ex: 'facebook.com').
+    - servers: hash associating OAuth2 server ids (ex: "facebook.com") 
+      with a hash containing (for each):
+      - server_authorize_endpoint: full URL, OAuth2 server token endpoint
+        (ex: "https://graph.facebook.com/oauth/authorize").
+      - server_token_endpoint: full url, where to check the token
+        (ex: "https://graph.facebook.com/oauth/access_token").
+      - client_id: the client id as registered by this OAuth2 server.
+      - client_secret: shared secret between client and this OAuth2 server.
+  
+  - options: optional, hash containing:
+    - valid_grant: a function which will replace the default one
+      to check the grant is ok. You might want to use this shortcut if you
+      have a faster way of checking than requesting the OAuth2 server
+      with an HTTP request.
+    - treat_access_token: a function which will replace the
+      default one to do something with the access token. You will tipically
+      use that function to set some info in session.
+    - transform_token_response: a function which will replace
+      the default one to obtain a hash containing the access_token from
+      the OAuth2 server reply. This method should be provided if the
+      OAuth2 server we are requesting does not return JSON encoded data.
+   
 
 Once set and plug, the oauth2_client middleware will catch and answer requests
 aimed at the oauth2 client (login, logout and process_login endpoints).

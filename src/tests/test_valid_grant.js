@@ -68,6 +68,7 @@ function() {
   web.POST = function(_, _, callback) {
     callback(200, {}, JSON.stringify(data));
   };
+  client.methods = {'serverid': client};
   client.valid_grant('serverid', 'code', function(token) {
     assert.deepEqual(data, token);
   }, function() {

@@ -37,13 +37,20 @@ var config = {
       client_id: "c5c0789871d6a65e485bc78235639d36",
       client_secret: 'ccd74db270c0b5f1dad0a603d36d6f1b',
       }
+    , "auth_server": {
+      server_authorize_endpoint: 'http://localhost:8080/oauth2/authorize',
+      server_token_endpoint: 'http://localhost:8080/oauth2/token',
+      client_id: null, // TODO: define this before running
+      client_secret: 'some secret string',
+      name: 'Test client'
+      }
     }
   }
 };
 
 var oauth2_client_options = {
-  "facebook.com": {
-    // To get info from access_token and set them in session
+  // To get info from access_token and set them in session
+  'facebook.com': {
     treat_access_token: function(access_token, req, res, callback) {
       var params = {access_token: access_token};
       web.GET('https://graph.facebook.com/me', params, 
@@ -62,6 +69,18 @@ var oauth2_client_options = {
       return data;
     }
   }
+, "auth_server": {
+    treat_access_token: function(access_token, req, res, callback) {
+      var params = {oauth_token: access_token};
+      web.GET('http://localhost:8080/auth', params, 
+      function(status_code, headers, data) {
+        console.log(data);
+        var info = JSON.parse(data);
+        req.session.user_name = info.email;
+        callback();
+      });
+    }
+  }
 };
 
 var server = connect.createServer(
@@ -75,6 +94,10 @@ var serve = function(port, callback) {
 }
 
 if(process.argv[1] == __filename) {
+  if(!config.oauth2_client.servers['auth_server'].client_id) {
+    console.log('You must set a oauth2 client id in config (cf. README).');
+    process.exit(1);
+  }
   serve(7070, function() {
     console.log('OAuth2 client server listning on http://localhost:7070');
   });

@@ -75,7 +75,8 @@ CLIENT.valid_grant = function(oauth2_server_id, code, callback, fallback) {
   }, function(statusCode, headers, body) {
     if(statusCode == 200) {
       try {
-        var token = CLIENT.transform_token_response(body)
+        var methods = CLIENT.methods[oauth2_server_id];
+        var token = methods.transform_token_response(body)
         callback(token);
       } catch(err) {
         fallback(err);
@@ -137,13 +138,14 @@ CLIENT.auth_process_login = function(req, res) {
   var oauth2_server_id = state[0];
   var next_url = state[1];
   state = state[2]; // TODO: do something with it!
-  CLIENT.valid_grant(oauth2_server_id, code, function(token) {
+  var methods = CLIENT.methods[oauth2_server_id];
+  methods.valid_grant(oauth2_server_id, code, function(token) {
     if(!token) {
       res.writeHead(400, {'Content-Type': 'text/plain'});
       res.end('Invalid grant.');
       return;
     }
-    CLIENT.treat_access_token(token.access_token, req, res, function() {
+    methods.treat_access_token(token.access_token, req, res, function() {
       tools.redirect(res, next_url);
     }, function(err){tools.server_error(res, err)});
   }, function(err){tools.server_error(res, err)});
@@ -172,12 +174,14 @@ CLIENT.redirects_for_login = function(oauth2_server_id, res, next_url, state) {
   tools.redirect(res, url);
 };
 
-CLIENT.nexturl_query = function(req) {
+CLIENT.nexturl_query = function(req, params) {
   /* Returns value of next url query parameter if present, default otherwise.
    * The next query parameter should not contain the domain, the result will.
    */
+  if(!params) {
+    params = URL.parse(req.url, true).query || {};
+  }
   var cconfig = CLIENT.config.client;
-  var params = URL.parse(req.url, true).query || {};
   var next = params.next || cconfig.default_redirection_url;
   var url = cconfig.base_url + next;
   return url;
@@ -193,8 +197,10 @@ var logout = function(req, res) {
 var login = function(req, res) {
   /* Triggers redirects_for_login with next param if present in url query.
    */
-  var oauth2_server_id = CLIENT.config.default_server;
-  CLIENT.redirects_for_login(oauth2_server_id, res, CLIENT.nexturl_query(req));
+  var params = URL.parse(req.url, true).query || {};
+  var oauth2_server_id = params.provider || CLIENT.config.default_server;
+  var next_url = CLIENT.nexturl_query(req, params);
+  CLIENT.redirects_for_login(oauth2_server_id, res, next_url);
 };
 
 exports.connector = function(conf, options) {
@@ -220,7 +226,7 @@ exports.connector = function(conf, options) {
    *
    *    - default_server: which server to use for default login when user
    *      access login_url (ex: 'facebook.com').
-   *    - servers: hash associating an OAuth2 server ids (ex: "facebook.com") 
+   *    - servers: hash associating OAuth2 server ids (ex: "facebook.com") 
    *      with a hash containing (for each):
    *      - server_authorize_endpoint: full URL, OAuth2 server token endpoint
    *        (ex: "https://graph.facebook.com/oauth/authorize").
@@ -229,7 +235,10 @@ exports.connector = function(conf, options) {
    *      - client_id: the client id as registered by this OAuth2 server.
    *      - client_secret: shared secret between client and this OAuth2 server.
    *
-   *  - options: optional, hash containing:
+   *  - options: optional, hash associating OAuth2 server ids 
+   *    (ex: "facebook.com") with hash containing some options specific to the server.
+   *    Not all servers have to be listed here, neither all options.
+   *    Possible options:
    *    - valid_grant: a function which will replace the default one
    *      to check the grant is ok. You might want to use this shortcut if you
    *      have a faster way of checking than requesting the OAuth2 server
@@ -246,13 +255,20 @@ exports.connector = function(conf, options) {
   conf.default_redirection_url = conf.default_redirection_url || '/';
   CLIENT.config = conf;
   var cconf = CLIENT.config.client;
+
+  // Build hash associating serverid and custom|default methods.
   options = options || {};
-  [ 'valid_grant'
-  , 'treat_access_token'
-  , 'transform_token_response'
-  ].forEach(function(fctName) {
-    if(options[fctName]) CLIENT[fctName] = options[fctName];
-  });
+  CLIENT.methods = {};
+  for(var serverid in conf.servers) {
+    var smethods = CLIENT.methods[serverid] = {};
+    var soptions = options[serverid] || {};
+    [ 'valid_grant'
+    , 'treat_access_token'
+    , 'transform_token_response'
+    ].forEach(function(fctName) {
+      smethods[fctName] = soptions[fctName] || CLIENT[fctName];
+    });
+  }
 
   var routes = {GET: {}};
   routes.GET[cconf.process_login_url] = CLIENT.auth_process_login;

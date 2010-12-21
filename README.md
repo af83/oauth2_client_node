@@ -48,19 +48,22 @@ To create an OAuth2 client, you will need to to create an oauth2_client_node mid
       - client_id: the client id as registered by this OAuth2 server.
       - client_secret: shared secret between client and this OAuth2 server.
   
-  - options: optional, hash containing:
-    - valid_grant: a function which will replace the default one
-      to check the grant is ok. You might want to use this shortcut if you
-      have a faster way of checking than requesting the OAuth2 server
-      with an HTTP request.
-    - treat_access_token: a function which will replace the
-      default one to do something with the access token. You will tipically
-      use that function to set some info in session.
-    - transform_token_response: a function which will replace
-      the default one to obtain a hash containing the access_token from
-      the OAuth2 server reply. This method should be provided if the
-      OAuth2 server we are requesting does not return JSON encoded data.
-   
+    - options: optional, hash associating OAuth2 server ids 
+      (ex: "facebook.com") with hash containing some options specific to the server.
+      Not all servers have to be listed here, neither all options.
+      Possible options:
+      - valid_grant: a function which will replace the default one
+        to check the grant is ok. You might want to use this shortcut if you
+        have a faster way of checking than requesting the OAuth2 server
+        with an HTTP request.
+      - treat_access_token: a function which will replace the
+        default one to do something with the access token. You will tipically
+        use that function to set some info in session.
+      - transform_token_response: a function which will replace
+        the default one to obtain a hash containing the access_token from
+        the OAuth2 server reply. This method should be provided if the
+        OAuth2 server we are requesting does not return JSON encoded data. 
+
 
 Once set and plug, the oauth2_client middleware will catch and answer requests
 aimed at the oauth2 client (login, logout and process_login endpoints).

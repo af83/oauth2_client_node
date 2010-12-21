@@ -4,7 +4,7 @@ var assert = require('nodetk/testing/custom_assert')
   ;
 
 
-// Reset some mocked/fucked stuff:
+// Reset some mocked/faked stuff:
 var ORIGIN = {};
 var to_save = ['valid_grant', 'treat_access_token'];
 to_save.forEach(function(fct_name) {
@@ -14,6 +14,11 @@ exports.module_close = function(callback) {
   to_save.forEach(function(fct_name) {
     client[fct_name] = ORIGIN[fct_name];
   });
+  callback();
+};
+
+exports.module_init = function(callback) {
+  client.methods = {'serverid': client};
   callback();
 };
 
@@ -40,7 +45,7 @@ exports.tests = [
 
 ['Invalid grant (no error)', 3, function() {
   client.valid_grant = function(_, _, callback){callback(null)};
-  state = client.dumps({});
+  state = client.dumps(['serverid', 'nexturl', null]);
   var req = {url: '/?code=somecode&state='+state};
   var res = tools.get_expected_res(400);
   client.auth_process_login(req, res);
@@ -48,7 +53,7 @@ exports.tests = [
 
 ['Invalid grant (error)', 3, function() {
   client.valid_grant = function(_, _, _, fallback){fallback('error')};
-  var state = client.dumps({});
+  var state = client.dumps(['serverid', 'nexturl', null]);
   var req = {url: '/?code=somecode&state='+state};
   var res = tools.get_expected_res(500);
   client.auth_process_login(req, res);
@@ -57,7 +62,7 @@ exports.tests = [
 ['Valid grant, treat_access_token fallback', 3, function() {
   client.valid_grant = function(_, _, callback){callback('token')};
   client.treat_access_token = function(_, _, _, _, fallback) {fallback('err')};
-  var state = client.dumps({});
+  var state = client.dumps(['serverid', 'nexturl', null]);
   var req = {url: '/?code=somecode&state='+state};
   var res = tools.get_expected_res(500);
   client.auth_process_login(req, res);

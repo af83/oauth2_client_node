@@ -20,8 +20,8 @@ var config = {
   oauth2_client: {
     client: {
       base_url: base_url,
-      process_login_url: '/login/process',
-      redirect_uri: base_url + '/login/process',
+      process_login_url: '/login/process/',
+      redirect_uri: base_url + '/login/process/',
       login_url: '/login',
       logout_url: '/logout',
       default_redirection_url: '/',
@@ -41,16 +41,18 @@ var config = {
 };
 
 var oauth2_client_options = {
-  // To get info from access_token and set them in session
-  treat_access_token: function(access_token, req, res, callback) {
-    var params = {oauth_token: access_token};
-    web.GET('http://localhost:8080/auth', params, 
-    function(status_code, headers, data) {
-      console.log(data);
-      var info = JSON.parse(data);
-      req.session.user_email = info.email;
-      callback();
-    });
+  "auth_server": {
+    // To get info from access_token and set them in session
+    treat_access_token: function(access_token, req, res, callback) {
+      var params = {oauth_token: access_token};
+      web.GET('http://localhost:8080/auth', params, 
+      function(status_code, headers, data) {
+        console.log(data);
+        var info = JSON.parse(data);
+        req.session.user_email = info.email;
+        callback();
+      });
+    }
   }
 };
 

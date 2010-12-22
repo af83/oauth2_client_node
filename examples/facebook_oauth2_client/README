@@ -1,14 +1,19 @@
 
 To run this example:
 
+Add the following line to your /etc/hosts file:
+ 
+    127.0.0.1 example.com
+
+
 - Starts the server (Oauth2 client server):
 
     node server.js
 
 
-- Go to http://127.0.0.1:7070/ and try to log in with one of your FB account(s)
+- Go to http://example.com:7070/ and try to log in with one of your FB account(s)
 
 
-NOTE: 22/12/2010, it seems this example no longer works, due to an error
-(or else?) from facebook redirecting the user to 127.facebook.com and not 127.0.0.1.
+NOTE: dating from 22/12/2010, it seems we can nolonger use 127.0.0.1 as redirect_url (as Facebook then redirects to 127.facebook.com and not 127.0.0.1).
+A solution is to set some host in /etc/hosts file.
 

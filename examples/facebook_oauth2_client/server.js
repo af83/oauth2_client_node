@@ -16,7 +16,7 @@ var querystring = require('querystring')
   , web = require('nodetk/web')
   ;
 
-var base_url = 'http://127.0.0.1:7070';
+var base_url = 'http://example.com:7070';
 var config = {
   oauth2_client: {
     client: {

@@ -8,3 +8,7 @@ To run this example:
 
 - Go to http://127.0.0.1:7070/ and try to log in with one of your FB account(s)
 
+
+NOTE: 22/12/2010, it seems this example no longer works, due to an error
+(or else?) from facebook redirecting the user to 127.facebook.com and not 127.0.0.1.
+

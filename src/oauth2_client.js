@@ -14,27 +14,10 @@ var URL = require('url')
   , base64 = require('base64')
   , web = require('nodetk/web')
   , tools = require('nodetk/server_tools')
+  , serializer = require('nodetk/serializer')
   ;
 
 var CLIENT = exports;
-
-CLIENT.dumps = function(obj) {
-  /* Crypt the JSON object to opaque string
-   */
-  // TODO: crypt the string
-  return base64.encode(JSON.stringify(obj));
-};
-
-CLIENT.loads = function(str) {
-  /* Uncrypt the string and return JSON obj or null.
-   */
-  if(!str) return null;
-  try {
-    return JSON.parse(base64.decode(str));
-  } catch(err) {
-    return null;
-  }
-};
 
 
 CLIENT.transform_token_response = function(body) {
@@ -50,12 +33,15 @@ CLIENT.transform_token_response = function(body) {
   return JSON.parse(body)
 };
 
-CLIENT.valid_grant = function(oauth2_server_id, code, callback, fallback) {
+CLIENT.valid_grant = function(data, code, callback, fallback) {
   /* Valid the grant given by user requesting the OAuth2 server 
    * at OAuth2 token endpoint.
    *
    * Arguments:
-   *    - oauth2_server_id: the OAuth2 server (ex: "facebook.com").
+   *    - data: hash containing:
+   *      - oauth2_server_id: string, the OAuth2 server is (ex: "facebook.com").
+   *      - next_url: string, the next_url associated with the OAuth2 request.
+   *      - state: hash, state associated with the OAuth2 request.
    *    - code: the authorization code given by OAuth2 server to user.
    *    - callback: function to be called once grant is validated/rejected.
    *      Called with the access_token returned by OAuth2 server as first
@@ -65,7 +51,7 @@ CLIENT.valid_grant = function(oauth2_server_id, code, callback, fallback) {
    *
    */
   var cconfig = CLIENT.config.client;
-  var sconfig = CLIENT.config.servers[oauth2_server_id];
+  var sconfig = CLIENT.config.servers[data.oauth2_server_id];
   web.POST(sconfig.server_token_endpoint, {
     grant_type: "authorization_code",
     client_id: sconfig.client_id,
@@ -75,7 +61,7 @@ CLIENT.valid_grant = function(oauth2_server_id, code, callback, fallback) {
   }, function(statusCode, headers, body) {
     if(statusCode == 200) {
       try {
-        var methods = CLIENT.methods[oauth2_server_id];
+        var methods = CLIENT.methods[data.oauth2_server_id];
         var token = methods.transform_token_response(body)
         callback(token);
       } catch(err) {
@@ -89,7 +75,7 @@ CLIENT.valid_grant = function(oauth2_server_id, code, callback, fallback) {
 };
 
 
-CLIENT.treat_access_token = function(access_token, req, res, callback, fallback) {
+CLIENT.treat_access_token = function(data, req, res, callback, fallback) {
   /* Make something with the access_token.
    *
    * This is the default implementation provided by this client.
@@ -98,7 +84,10 @@ CLIENT.treat_access_token = function(access_token, req, res, callback, fallback)
    * be passed to resource provider).
    *
    * Arguments:
-   *  - access_token: the access_token returned by the server.
+   *  - data: hash containing:
+   *    - access_token: the access_token returned by the server.
+   *    - next_url: the url to redirect to after the OAuth2 process is done.
+   *    - state: hash, state associated with the OAuth2 process.
    *  - req
    *  - res
    *  - callback: to be called when action is done. The request will be blocked
@@ -130,23 +119,27 @@ CLIENT.auth_process_login = function(req, res) {
     res.writeHead(400, {'Content-Type': 'text/plain'});
     return res.end('The "state" parameter is missing.');
   }
-  state = CLIENT.loads(state);
-  if(!state) {
+  try {
+    state = serializer.load_str(state);
+  } catch(err) {
     res.writeHead(400, {'Content-Type': 'text/plain'});
     return res.end('The "state" parameter is invalid.');
   }
-  var oauth2_server_id = state[0];
-  var next_url = state[1];
-  state = state[2]; // TODO: do something with it!
-  var methods = CLIENT.methods[oauth2_server_id];
-  methods.valid_grant(oauth2_server_id, code, function(token) {
+  var data = {
+    oauth2_server_id: state[0]
+  , next_url: state[1]
+  , state: state[2]
+  }
+  var methods = CLIENT.methods[data.oauth2_server_id];
+  methods.valid_grant(data, code, function(token) {
     if(!token) {
       res.writeHead(400, {'Content-Type': 'text/plain'});
       res.end('Invalid grant.');
       return;
     }
-    methods.treat_access_token(token.access_token, req, res, function() {
-      tools.redirect(res, next_url);
+    data.token = token;
+    methods.treat_access_token(data, req, res, function() {
+      tools.redirect(res, data.next_url);
     }, function(err){tools.server_error(res, err)});
   }, function(err){tools.server_error(res, err)});
 };
@@ -168,7 +161,7 @@ CLIENT.redirects_for_login = function(oauth2_server_id, res, next_url, state) {
     client_id: sconfig.client_id,
     redirect_uri: cconfig.redirect_uri,
     response_type: 'code',
-    state: CLIENT.dumps([oauth2_server_id, next_url, state || null])
+    state: serializer.dump_str([oauth2_server_id, next_url, state || null])
   };
   var url = sconfig.server_authorize_endpoint +'?'+ querystring.stringify(data);
   tools.redirect(res, url);

@@ -2,6 +2,7 @@ var assert = require('nodetk/testing/custom_assert')
   , tools = require('nodetk/testing/tools')
   , querystring = require('querystring')
   , client = require('../oauth2_client')
+  , serializer = require('nodetk/serializer')
   ;
 
 
@@ -25,7 +26,7 @@ exports.module_init = function(callback) {
 exports.tests = [
 
 ['no given state', 2, function() {
-  var state = client.dumps(['test', 'http://next_url', null]);
+  var state = serializer.dump_str(['test', 'http://next_url', null]);
   var qs = querystring.stringify({
     client_id: 'CLIENTID'
   , redirect_uri: 'http://site/process'
@@ -37,7 +38,7 @@ exports.tests = [
 }],
 
 ['given state', 2, function() {
-  var state = client.dumps(['test', 'http://next_url', {"key": "val"}]);
+  var state = serializer.dump_str(['test', 'http://next_url', {"key": "val"}]);
   var qs = querystring.stringify({
     client_id: 'CLIENTID'
   , redirect_uri: 'http://site/process'

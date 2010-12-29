@@ -24,6 +24,8 @@ client.config = config;
 var original_post = web.POST;
 exports.module_close = function(callback) {
   web.POST = original_post;
+  client.methods = {};
+  client.config = {};
   callback();
 };
 
@@ -41,13 +43,15 @@ function() {
   web.POST = function(url, params, callback) {
     assert.deepEqual(params, expected_sent_params)
   };
-  client.valid_grant('serverid', 'CODE', null, null);
+  var data = {oauth2_server_id: 'serverid'};
+  client.valid_grant(data, 'CODE', null, null);
 }],
 
 ['OAuth2 server replies 400', 1, function() {
   // Callback must be called with null as token
   web.POST = function(_, _, callback) {callback(400, {}, '')};
-  client.valid_grant('serverid', "some code", function(token) {
+  var data = {oauth2_server_id: 'serverid'};  
+  client.valid_grant(data, "some code", function(token) {
     assert.equal(token, null);    
   }, function() {
     assert.ok(false, 'Should not be called');
@@ -56,7 +60,8 @@ function() {
 
 ['OAuth2 server replies 200, grant valid, invalid answer', 1, function() {
   web.POST = function(_, _, callback) {callback(200, {}, 'invalid answer')};
-  client.valid_grant('serverid', 'some code', function() {
+  var data = {oauth2_server_id: 'serverid'};  
+  client.valid_grant(data, 'some code', function() {
     assert.ok(false, 'Should not be called');
   }, function(err) {
     assert.ok(err);
@@ -64,13 +69,14 @@ function() {
 }],
 
 ['OAuth2 server replies 200, grant valid, valid answer', 1, function() {
-  var data = {access_token: 'sometoken'};
+  var expected_token = {access_token: 'sometoken'};
   web.POST = function(_, _, callback) {
-    callback(200, {}, JSON.stringify(data));
+    callback(200, {}, JSON.stringify(expected_token));
   };
   client.methods = {'serverid': client};
-  client.valid_grant('serverid', 'code', function(token) {
-    assert.deepEqual(data, token);
+  var data = {oauth2_server_id: 'serverid'};  
+  client.valid_grant(data, 'code', function(token) {
+    assert.deepEqual(expected_token, token);
   }, function() {
     assert.ok(false, 'Should not be called');
   });

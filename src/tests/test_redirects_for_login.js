@@ -19,6 +19,12 @@ exports.module_init = function(callback) {
       }
     }
   };
+  client.serializer = serializer;
+  callback();
+};
+
+exports.module_close = function(callback) {
+  client.serializer = {};
   callback();
 };
 

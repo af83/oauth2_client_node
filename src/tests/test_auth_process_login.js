@@ -7,7 +7,7 @@ var assert = require('nodetk/testing/custom_assert')
 
 // Reset some mocked/faked stuff:
 var ORIGIN = {};
-var to_save = ['valid_grant', 'treat_access_token'];
+var to_save = ['valid_grant', 'treat_access_token', 'serializer'];
 to_save.forEach(function(fct_name) {
   ORIGIN[fct_name] = client[fct_name];
 });
@@ -20,6 +20,7 @@ exports.module_close = function(callback) {
 
 exports.module_init = function(callback) {
   client.methods = {'serverid': client};
+  client.serializer = serializer;
   callback();
 };
 

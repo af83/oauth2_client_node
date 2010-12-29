@@ -10,8 +10,8 @@ var URL = require('url')
   , querystring = require('querystring')
 
   , web = require('nodetk/web')
+  , SecureSerializer = require('nodetk/serializer').SecureSerializer
   , tools = require('nodetk/server_tools')
-  , serializer = require('nodetk/serializer')
   ;
 
 var CLIENT = exports;
@@ -117,7 +117,7 @@ CLIENT.auth_process_login = function(req, res) {
     return res.end('The "state" parameter is missing.');
   }
   try {
-    state = serializer.load_str(state);
+    state = CLIENT.serializer.load_str(state);
   } catch(err) {
     res.writeHead(400, {'Content-Type': 'text/plain'});
     return res.end('The "state" parameter is invalid.');
@@ -158,7 +158,7 @@ CLIENT.redirects_for_login = function(oauth2_server_id, res, next_url, state) {
     client_id: sconfig.client_id,
     redirect_uri: cconfig.redirect_uri,
     response_type: 'code',
-    state: serializer.dump_str([oauth2_server_id, next_url, state || null])
+    state: CLIENT.serializer.dump_str([oauth2_server_id, next_url, state || null])
   };
   var url = sconfig.server_authorize_endpoint +'?'+ querystring.stringify(data);
   tools.redirect(res, url);
@@ -213,6 +213,11 @@ exports.connector = function(conf, options) {
    *        cleared, and he is unlogged from client.
    *      - default_redirection_url: default URL to redirect to after login / logout.
    *        Optional, default to '/'.
+   *      - crypt_key: string, encryption key used to crypt information 
+   *        contained in the states.
+   *        This is a symmetric key and must be kept secret.
+   *      - sign_key: string, signature key used to sign (HMAC) issued states.
+   *        This is a symmetric key and must be kept secret.
    *
    *    - default_server: which server to use for default login when user
    *      access login_url (ex: 'facebook.com').
@@ -245,6 +250,7 @@ exports.connector = function(conf, options) {
   conf.default_redirection_url = conf.default_redirection_url || '/';
   CLIENT.config = conf;
   var cconf = CLIENT.config.client;
+  CLIENT.serializer = new SecureSerializer(cconf.crypt_key, cconf.sign_key);
 
   // Build hash associating serverid and custom|default methods.
   options = options || {};

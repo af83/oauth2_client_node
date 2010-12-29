@@ -36,6 +36,8 @@ To create an OAuth2 client, you will need to to create an oauth2_client_node mid
         cleared, and he is unlogged from client.
       - default_redirection_url: default URL to redirect to after login / logout.
         Optional, default to '/'.
+      - crypt_key: string, encryption key used to crypt information contained in states. This is a symmetric key and must be kept secret.
+      - sign_key: string, signature key used to sign (HMAC) issued states. This is a symmetric key and must be kept secret.
   
     - default_server: which server to use for default login when user
       access login_url (ex: 'facebook.com').
@@ -72,6 +74,8 @@ aimed at the oauth2 client (login, logout and process_login endpoints).
 ## Dependencies
 
 oauth2_client_node uses [nodetk](https://github.com/AF83/nodetk), packaged via git submodules.
+
+Tested with node v0.3.1. Does not fully work with v0.3.2 (bug in node ssl client).
 
 
 ## Projects using oauth2_client_node

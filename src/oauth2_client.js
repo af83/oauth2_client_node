@@ -6,12 +6,9 @@
  *    before), that redirects the user to the OAuth2 server for authentication.
  *
  */
-require.paths.unshift(__dirname + '/../vendors/node-base64');
-
 var URL = require('url')
   , querystring = require('querystring')
 
-  , base64 = require('base64')
   , web = require('nodetk/web')
   , tools = require('nodetk/server_tools')
   , serializer = require('nodetk/serializer')

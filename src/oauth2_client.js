@@ -65,7 +65,10 @@ CLIENT.valid_grant = function(data, code, callback, fallback) {
         fallback(err);
       }
     }
-    else callback(null);
+    else {
+      console.error(body);
+      callback(null);
+    }
     // TODO: check if error code indicates problem on the client,
     // and if so, calls fallback(err) instead of callback(null).
   });
@@ -82,7 +85,8 @@ CLIENT.treat_access_token = function(data, req, res, callback, fallback) {
    *
    * Arguments:
    *  - data: hash containing:
-   *    - access_token: the access_token returned by the server.
+   *    - token: the body returned by the server in json.
+   *      The oauth_token param value to send will be: data.token.access_token.
    *    - next_url: the url to redirect to after the OAuth2 process is done.
    *    - state: hash, state associated with the OAuth2 process.
    *  - req

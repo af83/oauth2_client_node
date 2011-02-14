@@ -1,6 +1,6 @@
 { "name" : "oauth2-client"
 , "description" : "A library providing the bases to implement an OAuth2 client (as connect middleware)."
-, "version": "0.0.1"
+, "version": "0.0.2"
 , "main": "./lib/oauth2_client.js"
 , "repository" :
   { "type" : "git"

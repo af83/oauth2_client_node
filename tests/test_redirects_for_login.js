@@ -1,7 +1,7 @@
 var assert = require('nodetk/testing/custom_assert')
   , tools = require('nodetk/testing/tools')
   , querystring = require('querystring')
-  , client = require('../oauth2_client')
+  , client = require('../lib/oauth2_client')
   , serializer = require('nodetk/serializer')
   ;
 

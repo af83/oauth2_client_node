@@ -1,5 +1,5 @@
 var assert = require('nodetk/testing/custom_assert');
-var client = require('../oauth2_client');
+var client = require('../lib/oauth2_client');
 
 
 exports.tests = [

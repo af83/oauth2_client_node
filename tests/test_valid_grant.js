@@ -1,5 +1,5 @@
 var assert = require('nodetk/testing/custom_assert')
-  , client = require('../oauth2_client')
+  , client = require('../lib/oauth2_client')
 
   , extend = require('nodetk/utils').extend
   , web = require('nodetk/web')

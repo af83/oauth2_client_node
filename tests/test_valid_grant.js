@@ -50,9 +50,9 @@ function() {
 ['OAuth2 server replies 400', 1, function() {
   // Callback must be called with null as token
   web.POST = function(_, _, callback) {callback(400, {}, '')};
-  var data = {oauth2_server_id: 'serverid'};  
+  var data = {oauth2_server_id: 'serverid'};
   client.valid_grant(data, "some code", function(token) {
-    assert.equal(token, null);    
+    assert.equal(token, null);
   }, function() {
     assert.ok(false, 'Should not be called');
   });
@@ -60,7 +60,7 @@ function() {
 
 ['OAuth2 server replies 200, grant valid, invalid answer', 1, function() {
   web.POST = function(_, _, callback) {callback(200, {}, 'invalid answer')};
-  var data = {oauth2_server_id: 'serverid'};  
+  var data = {oauth2_server_id: 'serverid'};
   client.valid_grant(data, 'some code', function() {
     assert.ok(false, 'Should not be called');
   }, function(err) {
@@ -74,7 +74,7 @@ function() {
     callback(200, {}, JSON.stringify(expected_token));
   };
   client.methods = {'serverid': client};
-  var data = {oauth2_server_id: 'serverid'};  
+  var data = {oauth2_server_id: 'serverid'};
   client.valid_grant(data, 'code', function(token) {
     assert.deepEqual(expected_token, token);
   }, function() {
@@ -83,4 +83,3 @@ function() {
 }],
 
 ];
-

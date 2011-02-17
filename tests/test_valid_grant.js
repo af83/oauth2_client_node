@@ -1,8 +1,8 @@
 var assert = require('nodetk/testing/custom_assert')
   , client = require('../lib/oauth2_client')
-
+  , querystring = require('querystring')
   , extend = require('nodetk/utils').extend
-  , web = require('nodetk/web')
+  , request = require('request')
   ;
 
 // Some config for the client:
@@ -21,9 +21,9 @@ var config = {
 client.config = config;
 
 // Reinit stuff that whould have been mocked/faked...
-var original_post = web.POST;
+var original_post = request.post;
 exports.module_close = function(callback) {
-  web.POST = original_post;
+  request.post = original_post;
   client.methods = {};
   client.config = {};
   callback();
@@ -40,8 +40,8 @@ function() {
   , client_secret: "CLIENT_SECRET"
   , redirect_uri: 'REDIRECT_URI'
   };
-  web.POST = function(url, params, callback) {
-    assert.deepEqual(params, expected_sent_params)
+  request.post = function(options, callback) {
+    assert.deepEqual(querystring.parse(options.body), expected_sent_params)
   };
   var data = {oauth2_server_id: 'serverid'};
   client.valid_grant(data, 'CODE', null, null);
@@ -49,7 +49,7 @@ function() {
 
 ['OAuth2 server replies 400', 1, function() {
   // Callback must be called with null as token
-  web.POST = function(_, _, callback) {callback(400, {}, '')};
+  request.post = function(_, callback) {callback(null, {statusCode: 400}, '')};
   var data = {oauth2_server_id: 'serverid'};
   client.valid_grant(data, "some code", function(token) {
     assert.equal(token, null);
@@ -59,7 +59,7 @@ function() {
 }],
 
 ['OAuth2 server replies 200, grant valid, invalid answer', 1, function() {
-  web.POST = function(_, _, callback) {callback(200, {}, 'invalid answer')};
+  request.post = function(options, callback) {callback(null, {statusCode: 200}, 'invalid answer')};
   var data = {oauth2_server_id: 'serverid'};
   client.valid_grant(data, 'some code', function() {
     assert.ok(false, 'Should not be called');
@@ -70,8 +70,8 @@ function() {
 
 ['OAuth2 server replies 200, grant valid, valid answer', 1, function() {
   var expected_token = {access_token: 'sometoken'};
-  web.POST = function(_, _, callback) {
-    callback(200, {}, JSON.stringify(expected_token));
+  request.post = function(options, callback) {
+    callback(null, {statusCode: 200}, JSON.stringify(expected_token));
   };
   client.methods = {'serverid': client};
   var data = {oauth2_server_id: 'serverid'};

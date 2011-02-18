@@ -7,8 +7,8 @@
   , "url" : "https://github.com/AF83/oauth2_client_node.git"
   }
 , "dependencies": {
-  "nodetk": "",
   "connect": "",
-  "request": ""
+  "request": "",
+  "serializer":""
 }
 }

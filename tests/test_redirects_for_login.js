@@ -1,24 +1,26 @@
 var assert = require('nodetk/testing/custom_assert')
   , tools = require('nodetk/testing/tools')
   , querystring = require('querystring')
-  , client = require('../lib/oauth2_client')
-  , serializer = require('nodetk/serializer')
+  , oauth2_client = require('../lib/oauth2_client')
+  , serializer = require('serializer')
   ;
 
 
+var client;
+
 exports.module_init = function(callback) {
-  client.config = {
+  client = oauth2_client.createClient({
     client: {
       redirect_uri: 'http://site/process'
     }
-  , default_server: "test"
-  , servers: {
+    , default_server: "test"
+    , servers: {
       "test": {
         server_authorize_endpoint: 'http://oauth2server/auth'
-      , client_id: 'CLIENTID'
+        , client_id: 'CLIENTID'
       }
     }
-  };
+  });
   client.serializer = serializer;
   callback();
 };
@@ -32,19 +34,19 @@ exports.module_close = function(callback) {
 exports.tests = [
 
 ['no given state', 2, function() {
-  var state = serializer.dump_str(['test', 'http://next_url', null]);
+  var state = serializer.stringify(['test', 'http://next_url', null]);
   var qs = querystring.stringify({
     client_id: 'CLIENTID'
-  , redirect_uri: 'http://site/process'
-  , response_type: 'code'
-  , state: state
+    , redirect_uri: 'http://site/process'
+    , response_type: 'code'
+    , state: state
   });
   var res = tools.get_expected_redirect_res("http://oauth2server/auth?" + qs);
   client.redirects_for_login('test', res, 'http://next_url');
 }],
 
 ['given state', 2, function() {
-  var state = serializer.dump_str(['test', 'http://next_url', {"key": "val"}]);
+  var state = serializer.stringify(['test', 'http://next_url', {"key": "val"}]);
   var qs = querystring.stringify({
     client_id: 'CLIENTID'
   , redirect_uri: 'http://site/process'

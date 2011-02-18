@@ -1,6 +1,5 @@
 var assert = require('nodetk/testing/custom_assert');
-var client = require('../lib/oauth2_client');
-
+var oauth2_client = require('../lib/oauth2_client');
 
 exports.tests = [
 
@@ -14,6 +13,9 @@ exports.tests = [
     assert.equal(arg, arg2);
     return res;
   };
+  var client = oauth2_client.createClient({
+    client: {}
+  });
   res2 = client.transform_token_response(arg);
   JSON.parse = original_parse;
   assert.equal(res, res2);

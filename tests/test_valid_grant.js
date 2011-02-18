@@ -1,31 +1,32 @@
 var assert = require('nodetk/testing/custom_assert')
-  , client = require('../lib/oauth2_client')
+  , oauth2_client = require('../lib/oauth2_client')
   , querystring = require('querystring')
   , extend = require('nodetk/utils').extend
   , request = require('request')
   ;
 
-// Some config for the client:
-var config = {
-  client: {
-    redirect_uri: 'REDIRECT_URI'
-  }
-, default_server: 'serverid'
-, servers: {
-    'serverid': {
-      client_id: "CLIENT_ID"
-    , client_secret: "CLIENT_SECRET"
+var client;
+
+exports.module_init = function(callback) {
+  client = oauth2_client.createClient({
+    client: {
+      redirect_uri: 'REDIRECT_URI'
     }
-  }
-};
-client.config = config;
+    , default_server: 'serverid'
+    , servers: {
+      'serverid': {
+        client_id: "CLIENT_ID"
+        , client_secret: "CLIENT_SECRET"
+      }
+    }
+  });
+  callback();
+}
 
 // Reinit stuff that whould have been mocked/faked...
 var original_post = request.post;
 exports.module_close = function(callback) {
   request.post = original_post;
-  client.methods = {};
-  client.config = {};
   callback();
 };
 

@@ -73,10 +73,15 @@ aimed at the oauth2 client (login, logout and process_login endpoints).
 
 ## Dependencies
 
-oauth2_client_node uses [nodetk](https://github.com/AF83/nodetk), packaged via git submodules.
+* connect
+* request
+* serializer
 
-Tested with node v0.3.1. Does not fully work with v0.3.2 (bug in node ssl client).
+Tested with node v0.4.
 
+## Tests
+
+with nodetk.
 
 ## Projects using oauth2_client_node
 
@@ -86,5 +91,3 @@ A [wiki page](https://github.com/AF83/oauth2_client_node/wiki) lists the project
 ## License
 
 BSD.
-
-

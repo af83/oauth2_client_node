@@ -1,21 +1,11 @@
-
-
-// Add location of dependencies to path:
-require.paths.unshift(__dirname + '/../dependencies/connect/lib/');
-require.paths.unshift(__dirname + '/../dependencies/cookie-sessions/lib/');
-require.paths.unshift(__dirname + '/../../vendors/nodetk/src/');
-require.paths.unshift(__dirname + '/../../vendors/node-base64/');
-require.paths.unshift(__dirname + '/../../src/');
-
-
 var app = require('./app')
-  , oauth2_client = require('oauth2_client')
+  , oauth2_client = require('../../')
   , connect = require('connect')
   , sessions = require('cookie-sessions')
-  , web = require('nodetk/web')
+  , request = require('request')
   ;
 
-var base_url = 'http://127.0.0.1:7070';
+var base_url = 'http://127.0.0.1:7071';
 var config = {
   oauth2_client: {
     client: {
@@ -29,12 +19,12 @@ var config = {
     default_server: "auth_server",
     servers: {
       "auth_server": {
-      server_authorize_endpoint: 'http://localhost:8080/oauth2/authorize',
-      server_token_endpoint: 'http://localhost:8080/oauth2/token',
+        server_authorize_endpoint: 'http://localhost:7070/oauth2/authorize',
+        server_token_endpoint: 'http://localhost:7070/oauth2/token',
 
-      client_id: null, // TODO: define this before running
-      client_secret: 'some secret string',
-      name: 'Test client'
+        client_id: "4d540f5d1277275252000005", // TODO: define this before running
+        client_secret: 'some secret string',
+        name: 'geeks'
       }
     }
   }
@@ -44,21 +34,23 @@ var oauth2_client_options = {
   "auth_server": {
     // To get info from access_token and set them in session
     treat_access_token: function(access_token, req, res, callback) {
-      var params = {oauth_token: access_token};
-      web.GET('http://localhost:8080/auth', params, 
-      function(status_code, headers, data) {
-        console.log(data);
-        var info = JSON.parse(data);
-        req.session.user_email = info.email;
-        callback();
-      });
+      request.get({uri: 'http://localhost:7070/portable_contacts/@me/@self',
+                   headers: {"Authorization" : "OAuth "+ access_token.token.access_token}},
+                  function(status_code, headers, data) {
+                    console.log(data);
+                    var info = JSON.parse(data);
+                    req.session.user_email = info.entry[0].displayName;
+                    callback();
+                  });
     }
   }
 };
 
+var client = oauth2_client.createClient(config.oauth2_client, oauth2_client_options);
+
 var server = connect.createServer(
   sessions({secret: '123abc', session_key: 'session'})
-, oauth2_client.connector(config.oauth2_client, oauth2_client_options)
+, client.connector()
 , app.connector()
 );
 
@@ -71,8 +63,7 @@ if(process.argv[1] == __filename) {
     console.log('You must set a oauth2 client id in config (cf. README).');
     process.exit(1);
   }
-  serve(7070, function() {
-    console.log('OAuth2 client server listning on http://localhost:7070');
+  serve(7071, function() {
+    console.log('OAuth2 client server listening on http://localhost:7071');
   });
 }
-

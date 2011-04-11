@@ -6,7 +6,7 @@ var assert = require('nodetk/testing/custom_assert')
 
 var client;
 
-exports.module_init = function(callback) {
+exports.setup = function(callback) {
   client = oauth2_client.createClient({
     client: {},
     servers: {
@@ -63,7 +63,7 @@ exports.tests = [
     client: {},
     servers: {'serverid': {}}},
     {'serverid':{
-      valid_grant: function(_, _, _, fallback){fallback('error')}}}
+      valid_grant: function(_, _, callback){callback('error')}}}
   );
   client.serializer = serializer;
   var state = serializer.stringify(['serverid', 'nexturl', null]);
@@ -78,7 +78,7 @@ exports.tests = [
     servers: {'serverid': {}}},
     {'serverid':{
       valid_grant: function(_, _, callback){callback('token')},
-      treat_access_token: function(_, _, _, _, fallback) {fallback('err')}}}
+      treat_access_token: function(_, _, _, callback) {callback('err')}}}
   );
   client.serializer = serializer;
   var state = serializer.stringify(['serverid', 'nexturl', null]);
@@ -92,7 +92,7 @@ exports.tests = [
     client: {},
     servers: {'serverid': {}}},
     {'serverid':{
-      valid_grant: function(_, _, callback){callback('token')},
+      valid_grant: function(_, _, callback){callback(null, 'token')},
       treat_access_token: function(_, _, _, callback) {callback()}}}
   );
   client.serializer = serializer;

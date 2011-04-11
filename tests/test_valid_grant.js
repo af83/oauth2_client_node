@@ -6,8 +6,9 @@ var assert = require('nodetk/testing/custom_assert')
   ;
 
 var client;
+var original_post = request.post;
 
-exports.module_init = function(callback) {
+exports.setup = function(callback) {
   client = oauth2_client.createClient({
     client: {
       redirect_uri: 'REDIRECT_URI'
@@ -16,15 +17,15 @@ exports.module_init = function(callback) {
     , servers: {
       'serverid': {
         client_id: "CLIENT_ID"
-        , client_secret: "CLIENT_SECRET"
+      , client_secret: "CLIENT_SECRET"
       }
     }
   });
+  request.post = original_post;
   callback();
 }
 
 // Reinit stuff that whould have been mocked/faked...
-var original_post = request.post;
 exports.module_close = function(callback) {
   request.post = original_post;
   callback();
@@ -62,24 +63,21 @@ function() {
 ['OAuth2 server replies 200, grant valid, invalid answer', 1, function() {
   request.post = function(options, callback) {callback(null, {statusCode: 200}, 'invalid answer')};
   var data = {oauth2_server_id: 'serverid'};
-  client.valid_grant(data, 'some code', function() {
-    assert.ok(false, 'Should not be called');
-  }, function(err) {
+  client.valid_grant(data, 'some code', function(err) {
     assert.ok(err);
   });
 }],
 
-['OAuth2 server replies 200, grant valid, valid answer', 1, function() {
+['OAuth2 server replies 200, grant valid, valid answer', 2, function() {
   var expected_token = {access_token: 'sometoken'};
   request.post = function(options, callback) {
     callback(null, {statusCode: 200}, JSON.stringify(expected_token));
   };
   client.methods = {'serverid': client};
   var data = {oauth2_server_id: 'serverid'};
-  client.valid_grant(data, 'code', function(token) {
+  client.valid_grant(data, 'code', function(err, token) {
+    assert.deepEqual(err, null, "should be null");
     assert.deepEqual(expected_token, token);
-  }, function() {
-    assert.ok(false, 'Should not be called');
   });
 }],
 
